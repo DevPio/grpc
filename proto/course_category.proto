@@ -11,6 +11,9 @@ message Category {
 
 message blank {}
 
+message Query {
+    string search = 1;
+}
 message CategoryRequest {
     string name = 1;
     string description = 2;
@@ -32,4 +35,7 @@ message CategoryListCategories {
 service CategoryService {
     rpc CreateCategory (CategoryRequest) returns (CategoryResponse) {};
     rpc ListCategories (blank) returns (CategoryListCategories) {};
+    rpc SearchCategory (Query) returns (CategoryListCategories) {};
+    rpc CreateCategoryStream(stream CategoryRequest) returns (CategoryListCategories) {}
+    rpc CreateCategoryStreamBiderectinal(stream CategoryRequest) returns (stream CategoryListCategories) {}
 }

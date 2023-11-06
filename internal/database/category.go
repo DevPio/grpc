@@ -2,7 +2,7 @@ package database
 
 import (
 	"database/sql"
-
+    "fmt"
 	"github.com/google/uuid"
 )
 
@@ -62,4 +62,25 @@ func (c *Category) Find(id string) (Category, error) {
 		return Category{}, err
 	}
 	return Category{ID: id, Name: name, Description: description}, nil
+}
+
+func (c *Category) Search(name string) ([]Category, error) {
+	
+	rows, err := c.db.Query("SELECT * FROM categories WHERE name LIKE  '%$1%'", name)
+
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	categories := []Category{}
+
+	for rows.Next() {
+		var id, name, description string
+		fmt.Println(name);
+		if err := rows.Scan(&id, &name, &description); err != nil {
+			return nil, err
+		}
+		categories = append(categories, Category{ID: id, Name: name, Description: description})
+	}
+	return categories, nil
 }

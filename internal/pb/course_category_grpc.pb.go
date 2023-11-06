@@ -24,6 +24,9 @@ const _ = grpc.SupportPackageIsVersion7
 type CategoryServiceClient interface {
 	CreateCategory(ctx context.Context, in *CategoryRequest, opts ...grpc.CallOption) (*CategoryResponse, error)
 	ListCategories(ctx context.Context, in *Blank, opts ...grpc.CallOption) (*CategoryListCategories, error)
+	SearchCategory(ctx context.Context, in *Query, opts ...grpc.CallOption) (*CategoryListCategories, error)
+	CreateCategoryStream(ctx context.Context, opts ...grpc.CallOption) (CategoryService_CreateCategoryStreamClient, error)
+	CreateCategoryStreamBiderectinal(ctx context.Context, opts ...grpc.CallOption) (CategoryService_CreateCategoryStreamBiderectinalClient, error)
 }
 
 type categoryServiceClient struct {
@@ -52,12 +55,89 @@ func (c *categoryServiceClient) ListCategories(ctx context.Context, in *Blank, o
 	return out, nil
 }
 
+func (c *categoryServiceClient) SearchCategory(ctx context.Context, in *Query, opts ...grpc.CallOption) (*CategoryListCategories, error) {
+	out := new(CategoryListCategories)
+	err := c.cc.Invoke(ctx, "/pb.CategoryService/SearchCategory", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *categoryServiceClient) CreateCategoryStream(ctx context.Context, opts ...grpc.CallOption) (CategoryService_CreateCategoryStreamClient, error) {
+	stream, err := c.cc.NewStream(ctx, &CategoryService_ServiceDesc.Streams[0], "/pb.CategoryService/CreateCategoryStream", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &categoryServiceCreateCategoryStreamClient{stream}
+	return x, nil
+}
+
+type CategoryService_CreateCategoryStreamClient interface {
+	Send(*CategoryRequest) error
+	CloseAndRecv() (*CategoryListCategories, error)
+	grpc.ClientStream
+}
+
+type categoryServiceCreateCategoryStreamClient struct {
+	grpc.ClientStream
+}
+
+func (x *categoryServiceCreateCategoryStreamClient) Send(m *CategoryRequest) error {
+	return x.ClientStream.SendMsg(m)
+}
+
+func (x *categoryServiceCreateCategoryStreamClient) CloseAndRecv() (*CategoryListCategories, error) {
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	m := new(CategoryListCategories)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+func (c *categoryServiceClient) CreateCategoryStreamBiderectinal(ctx context.Context, opts ...grpc.CallOption) (CategoryService_CreateCategoryStreamBiderectinalClient, error) {
+	stream, err := c.cc.NewStream(ctx, &CategoryService_ServiceDesc.Streams[1], "/pb.CategoryService/CreateCategoryStreamBiderectinal", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &categoryServiceCreateCategoryStreamBiderectinalClient{stream}
+	return x, nil
+}
+
+type CategoryService_CreateCategoryStreamBiderectinalClient interface {
+	Send(*CategoryRequest) error
+	Recv() (*CategoryListCategories, error)
+	grpc.ClientStream
+}
+
+type categoryServiceCreateCategoryStreamBiderectinalClient struct {
+	grpc.ClientStream
+}
+
+func (x *categoryServiceCreateCategoryStreamBiderectinalClient) Send(m *CategoryRequest) error {
+	return x.ClientStream.SendMsg(m)
+}
+
+func (x *categoryServiceCreateCategoryStreamBiderectinalClient) Recv() (*CategoryListCategories, error) {
+	m := new(CategoryListCategories)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 // CategoryServiceServer is the server API for CategoryService service.
 // All implementations must embed UnimplementedCategoryServiceServer
 // for forward compatibility
 type CategoryServiceServer interface {
 	CreateCategory(context.Context, *CategoryRequest) (*CategoryResponse, error)
 	ListCategories(context.Context, *Blank) (*CategoryListCategories, error)
+	SearchCategory(context.Context, *Query) (*CategoryListCategories, error)
+	CreateCategoryStream(CategoryService_CreateCategoryStreamServer) error
+	CreateCategoryStreamBiderectinal(CategoryService_CreateCategoryStreamBiderectinalServer) error
 	mustEmbedUnimplementedCategoryServiceServer()
 }
 
@@ -70,6 +150,15 @@ func (UnimplementedCategoryServiceServer) CreateCategory(context.Context, *Categ
 }
 func (UnimplementedCategoryServiceServer) ListCategories(context.Context, *Blank) (*CategoryListCategories, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListCategories not implemented")
+}
+func (UnimplementedCategoryServiceServer) SearchCategory(context.Context, *Query) (*CategoryListCategories, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SearchCategory not implemented")
+}
+func (UnimplementedCategoryServiceServer) CreateCategoryStream(CategoryService_CreateCategoryStreamServer) error {
+	return status.Errorf(codes.Unimplemented, "method CreateCategoryStream not implemented")
+}
+func (UnimplementedCategoryServiceServer) CreateCategoryStreamBiderectinal(CategoryService_CreateCategoryStreamBiderectinalServer) error {
+	return status.Errorf(codes.Unimplemented, "method CreateCategoryStreamBiderectinal not implemented")
 }
 func (UnimplementedCategoryServiceServer) mustEmbedUnimplementedCategoryServiceServer() {}
 
@@ -120,6 +209,76 @@ func _CategoryService_ListCategories_Handler(srv interface{}, ctx context.Contex
 	return interceptor(ctx, in, info, handler)
 }
 
+func _CategoryService_SearchCategory_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Query)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CategoryServiceServer).SearchCategory(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/pb.CategoryService/SearchCategory",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CategoryServiceServer).SearchCategory(ctx, req.(*Query))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _CategoryService_CreateCategoryStream_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(CategoryServiceServer).CreateCategoryStream(&categoryServiceCreateCategoryStreamServer{stream})
+}
+
+type CategoryService_CreateCategoryStreamServer interface {
+	SendAndClose(*CategoryListCategories) error
+	Recv() (*CategoryRequest, error)
+	grpc.ServerStream
+}
+
+type categoryServiceCreateCategoryStreamServer struct {
+	grpc.ServerStream
+}
+
+func (x *categoryServiceCreateCategoryStreamServer) SendAndClose(m *CategoryListCategories) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func (x *categoryServiceCreateCategoryStreamServer) Recv() (*CategoryRequest, error) {
+	m := new(CategoryRequest)
+	if err := x.ServerStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+func _CategoryService_CreateCategoryStreamBiderectinal_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(CategoryServiceServer).CreateCategoryStreamBiderectinal(&categoryServiceCreateCategoryStreamBiderectinalServer{stream})
+}
+
+type CategoryService_CreateCategoryStreamBiderectinalServer interface {
+	Send(*CategoryListCategories) error
+	Recv() (*CategoryRequest, error)
+	grpc.ServerStream
+}
+
+type categoryServiceCreateCategoryStreamBiderectinalServer struct {
+	grpc.ServerStream
+}
+
+func (x *categoryServiceCreateCategoryStreamBiderectinalServer) Send(m *CategoryListCategories) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func (x *categoryServiceCreateCategoryStreamBiderectinalServer) Recv() (*CategoryRequest, error) {
+	m := new(CategoryRequest)
+	if err := x.ServerStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 // CategoryService_ServiceDesc is the grpc.ServiceDesc for CategoryService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -135,7 +294,23 @@ var CategoryService_ServiceDesc = grpc.ServiceDesc{
 			MethodName: "ListCategories",
 			Handler:    _CategoryService_ListCategories_Handler,
 		},
+		{
+			MethodName: "SearchCategory",
+			Handler:    _CategoryService_SearchCategory_Handler,
+		},
 	},
-	Streams:  []grpc.StreamDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "CreateCategoryStream",
+			Handler:       _CategoryService_CreateCategoryStream_Handler,
+			ClientStreams: true,
+		},
+		{
+			StreamName:    "CreateCategoryStreamBiderectinal",
+			Handler:       _CategoryService_CreateCategoryStreamBiderectinal_Handler,
+			ServerStreams: true,
+			ClientStreams: true,
+		},
+	},
 	Metadata: "proto/course_category.proto",
 }
